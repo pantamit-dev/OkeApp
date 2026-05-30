@@ -1,0 +1,35 @@
+--------------------------------------------------------------------------------
+📋 Project Requirements: YouTube Online Karaoke Web App
+1. ภาพรวมของโปรเจกต์ (Project Overview) เป้าหมายคือการสร้างเว็บแอปพลิเคชันสำหรับร้องคาราโอเกะออนไลน์ โดยใช้ฐานข้อมูลวิดีโอจาก YouTube (อ้างอิงรูปแบบจาก YouOke
+) ตัวแอปจะต้องมีระบบค้นหาเพลง, การจัดคิวเพลง, และการควบคุมเครื่องเล่นวิดีโอ (Player Controls) อย่างสมบูรณ์
+2. เทคโนโลยีที่ใช้ (Tech Stack)
+Frontend / Framework: Next.js (React) เนื่องจากเป็น Framework ที่ได้รับความนิยม มีประสิทธิภาพสูง และรองรับการทำ SSR/API Routes ในตัว
+Backend / Database / Authentication: Supabase (PostgreSQL) สำหรับจัดการระบบสมาชิก (Auth) และเก็บข้อมูลคิวเพลงหรือเพลย์ลิสต์ส่วนตัว รวมถึงใช้ฟีเจอร์ Row Level Security (RLS) เพื่อความปลอดภัยของข้อมูล
+Deployment: Vercel สำหรับการ Deploy เว็บแอปพลิเคชัน เนื่องจากทำงานร่วมกับ Next.js และ Supabase ได้อย่างไร้รอยต่อ
+3. API ที่จำเป็นต้องใช้ (Required APIs) Agent จะต้องใช้ 2 APIs หลักของ Google/YouTube ดังนี้:
+YouTube Data API v3:
+หน้าที่: ใช้สำหรับค้นหาเพลง (Search) จากคำค้นหาของระบบ
+Endpoint ที่ใช้: search.list
+ข้อควรระวัง: การเรียกใช้ search.list 1 ครั้งจะกินโควตา (Quota) 100 หน่วย
+ ดังนั้น Agent ควรออกแบบระบบให้มีการแคช (Cache) ผลการค้นหา หรือบันทึกเพลงยอดฮิตไว้ใน Supabase Database เพื่อลดการเรียก API เกินความจำเป็น
+การตั้งค่า: ต้องเปิดใช้งาน API ใน Google Cloud Console และสร้าง API Key แบบ Restricted ให้รองรับเฉพาะ YouTube Data API v3
+YouTube IFrame Player API:
+หน้าที่: ใช้สำหรับฝังวิดีโอ YouTube ลงในเว็บและควบคุมการเล่นด้วย JavaScript
+พารามิเตอร์สำคัญ: ต้องแนบ enablejsapi=1 ใน URL ของ Iframe เสมอ เพื่อให้สามารถสั่งการผ่านโค้ดได้
+ฟังก์ชันการควบคุม (Player Controls): ต้องรองรับการเรียกใช้เมธอด เช่น playVideo(), pauseVideo(), stopVideo(), mute(), unMute(), setVolume()
+การจัดการคิวเพลง (Auto-Play Next): Agent ต้องดักจับ Event onStateChange หากสถานะวิดีโอเปลี่ยนเป็น 0 (หรือ YT.PlayerState.ENDED) ให้ระบบทำการโหลดและเล่นเพลงถัดไปในคิวทันที
+4. โครงสร้างฟีเจอร์และ UI (Features & UI Structure) อ้างอิงจากระบบคาราโอเกะมาตรฐาน ให้ Agent สร้างส่วนประกอบ UI ดังนี้:
+เมนูหลัก (Navigation): หน้าหลัก (Home), ชาร์ตเพลงยอดฮิต, สถานีเพลง, เพลย์ลิสต์ส่วนตัว, บัญชีผู้ใช้
+หมวดหมู่เพลง (Categories): สร้างการกรองหมวดหมู่ให้ผู้ใช้เลือก เช่น สตริง/T-POP, ลูกทุ่งยอดฮิต, หมอลำ, ร็อกไทย, ยุค 90, วัยรุ่นยุค 2000, R&B/Soul, อินดี้, เอเชียนฮิต (K-POP/J-POP) และ International Hits
+ระบบเครื่องเล่น (Video Player & Queue):
+มีพื้นที่แสดงวิดีโอ (Iframe)
+มีปุ่มควบคุม: เล่น/หยุด (Play/Pause), ร้องซ้ำ (Repeat), เพลงถัดไป (Next), ปิดเสียง (Mute), เต็มจอ (Fullscreen), และระบบ CAST ขึ้นทีวี
+มีแถบแสดง "คิวเพลง" เพื่อให้ผู้ใช้สามารถกด "เพิ่มเพลงเข้าคิว" (Add to Queue) ได้เรื่อยๆ โดยไม่ขัดจังหวะการเล่น
+5. โครงสร้างฐานข้อมูลเบื้องต้นบน Supabase (Database Schema) Agent ควรสร้าง Tables เบื้องต้นดังนี้ (ต้องเปิดใช้งาน RLS ทุก Table
+):
+users: เก็บข้อมูลผู้ใช้ (เชื่อมกับระบบ Supabase Auth)
+playlists: เก็บเพลย์ลิสต์เพลงที่ผู้ใช้สร้าง (Columns: id, user_id, name, created_at)
+playlist_items: เก็บรายการวิดีโอ YouTube ในเพลย์ลิสต์ (Columns: id, playlist_id, youtube_video_id, title, thumbnail_url, position)
+saved_songs (Optional สำหรับทำ Caching): เก็บข้อมูลผลการค้นหาจาก YouTube API เพื่อประหยัด API Quota
+
+--------------------------------------------------------------------------------
