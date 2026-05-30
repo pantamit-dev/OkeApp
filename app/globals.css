@@ -253,3 +253,211 @@ body {
   background-color: rgba(217, 70, 239, 0.3);
   color: white;
 }
+
+/* ===== Mobile Bottom Controls Bar ===== */
+.mobile-controls-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  background: rgba(15, 15, 20, 0.92);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* Light theme override */
+[data-theme="light"] .mobile-controls-bar {
+  background: rgba(255, 255, 255, 0.92);
+  border-top-color: rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.08);
+}
+
+.mobile-controls-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-controls-thumbnail {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.mobile-controls-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mobile-controls-playing-indicator {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.mobile-eq-bar {
+  width: 3px;
+  border-radius: 2px;
+  background: #d946ef;
+}
+
+.mobile-eq-1 {
+  animation: equalizer-1 0.8s ease-in-out infinite;
+  height: 6px;
+}
+
+.mobile-eq-2 {
+  animation: equalizer-2 0.6s ease-in-out infinite;
+  height: 8px;
+}
+
+.mobile-eq-3 {
+  animation: equalizer-3 0.9s ease-in-out infinite;
+  height: 5px;
+}
+
+.mobile-controls-text {
+  min-width: 0;
+  flex: 1;
+}
+
+.mobile-controls-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+[data-theme="light"] .mobile-controls-title {
+  color: rgba(0, 0, 0, 0.85);
+}
+
+.mobile-controls-artist {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+  margin-top: 1px;
+}
+
+[data-theme="light"] .mobile-controls-artist {
+  color: rgba(0, 0, 0, 0.4);
+}
+
+.mobile-controls-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mobile-ctrl-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-ctrl-btn:active {
+  transform: scale(0.88);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.mobile-ctrl-btn:disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+}
+
+.mobile-ctrl-btn:disabled:active {
+  transform: none;
+  background: transparent;
+}
+
+[data-theme="light"] .mobile-ctrl-btn {
+  color: rgba(0, 0, 0, 0.5);
+}
+
+[data-theme="light"] .mobile-ctrl-btn:active {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.mobile-ctrl-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.mobile-ctrl-btn-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #d946ef, #9333ea);
+  color: white;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 2px 12px rgba(217, 70, 239, 0.4);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-ctrl-btn-main:active {
+  transform: scale(0.9);
+  box-shadow: 0 1px 8px rgba(217, 70, 239, 0.3);
+}
+
+.mobile-ctrl-btn-main:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.mobile-ctrl-btn-main:disabled:active {
+  transform: none;
+}
+
+.mobile-ctrl-icon-main {
+  width: 22px;
+  height: 22px;
+}
+
+/* ===== Touch Drag Active State ===== */
+.touch-drag-active {
+  opacity: 0.5;
+  transform: scale(0.96);
+  box-shadow: 0 0 20px rgba(217, 70, 239, 0.2);
+  transition: all 0.15s ease;
+}

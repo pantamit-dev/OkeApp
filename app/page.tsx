@@ -7,6 +7,7 @@ import YouTubePlayer, { YouTubePlayerHandle } from "@/components/YouTubePlayer";
 import QueueList from "@/components/QueueList";
 import NowPlaying from "@/components/NowPlaying";
 import ToastContainer from "@/components/Toast";
+import MobileControls from "@/components/MobileControls";
 import RoomPanel from "@/components/RoomPanel";
 import { useQueue } from "@/hooks/useQueue";
 import { useToast } from "@/hooks/useToast";
@@ -43,6 +44,7 @@ export default function HomePage() {
   const playerRef = useRef<YouTubePlayerHandle>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   // ป้องกัน sync loop
   const isSyncingRef = useRef(false);
@@ -180,6 +182,7 @@ export default function HomePage() {
             isRepeat={queue.isRepeat}
             onEnded={handleEnded}
             onToggleRepeat={toggleRepeat}
+            onPlayStateChange={setIsPlaying}
           />
         </div>
 
@@ -215,7 +218,7 @@ export default function HomePage() {
 
   // ===== Normal Layout =====
   return (
-    <div className="flex min-h-dvh flex-col bg-mesh" style={{ background: "var(--background)" }}>
+    <div className="flex min-h-dvh flex-col bg-mesh pb-[76px] lg:pb-0" style={{ background: "var(--background)" }}>
       {/* Navbar + Room Panel */}
       <nav
         className="sticky top-0 z-50 border-b backdrop-blur-xl"
@@ -286,6 +289,7 @@ export default function HomePage() {
                 isRepeat={queue.isRepeat}
                 onEnded={handleEnded}
                 onToggleRepeat={toggleRepeat}
+                onPlayStateChange={setIsPlaying}
               />
               {/* ปุ่มขวาบน: ขยาย + เต็มจอ */}
               <div className="absolute right-3 top-3 z-10 flex gap-2">
@@ -398,6 +402,15 @@ export default function HomePage() {
           🎤 KaraokeApp — ร้องเพลงคาราโอเกะออนไลน์ · Powered by YouTube
         </p>
       </footer>
+
+      {/* Mobile Bottom Controls */}
+      <MobileControls
+        isPlaying={isPlaying}
+        currentSong={currentSong}
+        onTogglePlay={() => playerRef.current?.togglePlay()}
+        onNext={() => playNext()}
+        onRestart={() => playerRef.current?.seekTo(0)}
+      />
 
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} onRemove={removeToast} />

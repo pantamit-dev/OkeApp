@@ -10,6 +10,7 @@ interface YouTubePlayerProps {
   isRepeat: boolean;
   onEnded: () => void;
   onToggleRepeat: () => void;
+  onPlayStateChange?: (isPlaying: boolean) => void;
 }
 
 // ให้ page.tsx เรียก method เหล่านี้ผ่าน ref (สำหรับ keyboard shortcuts)
@@ -20,7 +21,7 @@ export interface YouTubePlayerHandle {
 }
 
 const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
-  ({ currentSong, isRepeat, onEnded, onToggleRepeat }, ref) => {
+  ({ currentSong, isRepeat, onEnded, onToggleRepeat, onPlayStateChange }, ref) => {
     const {
       isReady,
       isPlaying,
@@ -35,6 +36,8 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
       seekTo,
     } = useYouTubePlayer("youtube-player", {
       onEnded,
+      onPlaying: () => onPlayStateChange?.(true),
+      onPaused: () => onPlayStateChange?.(false),
     });
 
     // เปิดให้ parent เข้าถึง method ผ่าน ref
