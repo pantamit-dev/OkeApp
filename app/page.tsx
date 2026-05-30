@@ -227,7 +227,7 @@ export default function HomePage() {
           backgroundColor: "var(--nav-bg)",
         }}
       >
-        <div className="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-3 lg:px-6">
+        <div className="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-3 lg:px-6 relative">
           <a href="/" className="flex items-center gap-2 group">
             <span className="text-3xl transition-transform group-hover:scale-110 group-hover:rotate-12">
               🎤
@@ -236,6 +236,14 @@ export default function HomePage() {
               InwZa'KaraO'ke
             </span>
           </a>
+
+          {/* Center Credit (กรอบสีแดง) */}
+          <div
+            className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold tracking-wider uppercase opacity-60"
+            style={{ color: "var(--text-secondary)" }}
+          >
+            ©️Power By S'Pantamit
+          </div>
 
           <div className="flex items-center gap-2">
             {/* Room Panel */}
@@ -399,7 +407,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t py-4 text-center" style={{ borderColor: "var(--border)" }}>
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          🎤 InwZa'KaraO'ke — ©️Power By S'Pantamit · Powered by YouTube
+          🎤 InwZa'KaraO'ke — ร้องเพลงคาราโอเกะออนไลน์ · Powered by YouTube
         </p>
       </footer>
 
