@@ -47,7 +47,7 @@ export default function RoomGuestPage() {
           <div className="flex items-center gap-2">
             <span className="text-2xl">🎤</span>
             <span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-400 bg-clip-text text-lg font-bold text-transparent">
-              KaraokeApp
+              InwZa'KaraO'ke
             </span>
           </div>
           <div className="flex items-center gap-2">

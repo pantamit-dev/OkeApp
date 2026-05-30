@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "KaraokeApp — ร้องคาราโอเกะออนไลน์",
+  title: "InwZa'KaraO'ke — ร้องคาราโอเกะออนไลน์",
   description:
     "เว็บแอปร้องเพลงคาราโอเกะออนไลน์ ค้นหาเพลงจาก YouTube พร้อมระบบจัดคิวเพลงและเครื่องเล่นวิดีโอ",
   keywords: "คาราโอเกะ, karaoke, ร้องเพลง, YouTube, เพลงไทย, online karaoke",

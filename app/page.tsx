@@ -233,7 +233,7 @@ export default function HomePage() {
               🎤
             </span>
             <span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-400 bg-clip-text text-xl font-bold tracking-tight text-transparent lg:text-2xl">
-              KaraokeApp
+              InwZa'KaraO'ke
             </span>
           </a>
 
@@ -399,7 +399,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t py-4 text-center" style={{ borderColor: "var(--border)" }}>
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          🎤 KaraokeApp — ร้องเพลงคาราโอเกะออนไลน์ · Powered by YouTube
+          🎤 InwZa'KaraO'ke — ©️Power By S'Pantamit · Powered by YouTube
         </p>
       </footer>
 
