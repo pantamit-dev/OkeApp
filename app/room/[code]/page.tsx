@@ -91,59 +91,7 @@ export default function RoomGuestPage() {
         {/* ค้นหาเพลง */}
         <SearchBar onAddToQueue={handleAddToQueue} />
 
-        {/* Playback Controls (รีโมตคอนโทรลควบคุมหน้าจอหลัก) */}
-        {remoteQueue && (
-          <div className="rounded-2xl border border-white/10 bg-zinc-900/50 p-4 backdrop-blur-md space-y-3">
-            <h2 className="text-xs font-semibold text-white/40 uppercase tracking-wider text-center">
-              แผงควบคุมระยะไกล (Remote Control)
-            </h2>
-            <div className="flex items-center justify-center gap-4">
-              {/* Replay / Restart */}
-              <button
-                onClick={() => sendPlaybackCommand("REPLAY").then(() => addToast("เริ่มเล่นใหม่", "info"))}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 active:scale-95 transition-all"
-                title="เริ่มเล่นใหม่"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 8H18" />
-                </svg>
-              </button>
 
-              {/* Play / Pause Toggle */}
-              <button
-                onClick={() => {
-                  const nextAction = remoteQueue.isPlaying ? "PAUSE" : "PLAY";
-                  sendPlaybackCommand(nextAction).then(() => {
-                    addToast(nextAction === "PLAY" ? "เล่นเพลง" : "หยุดเพลง", "info");
-                  });
-                }}
-                className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg hover:brightness-110 active:scale-95 transition-all"
-                title={remoteQueue.isPlaying ? "หยุดเพลง" : "เล่นเพลง"}
-              >
-                {remoteQueue.isPlaying ? (
-                  <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path fillRule="evenodd" d="M6.75 5.25a.75.75 0 01.75-.75H9a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H7.5a.75.75 0 01-.75-.75V5.25zm7.5 0A.75.75 0 0115 4.5h1.5a.75.75 0 01.75.75v13.5a.75.75 0 01-.75.75H15a.75.75 0 01-.75-.75V5.25z" clipRule="evenodd" />
-                  </svg>
-                ) : (
-                  <svg className="h-6 w-6 ml-0.5" fill="currentColor" viewBox="0 0 24 24">
-                    <path fillRule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.33 2.779-1.643l11.54 6.348c1.295.712 1.295 2.573 0 3.285L7.28 19.991c-1.25.687-2.779-.217-2.779-1.643V5.653z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </button>
-
-              {/* Next (Skip) */}
-              <button
-                onClick={() => sendPlaybackCommand("NEXT").then(() => addToast("ข้ามเพลง", "info"))}
-                className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 active:scale-95 transition-all"
-                title="ข้ามเพลงถัดไป"
-              >
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* คิวเพลงปัจจุบัน */}
         {remoteQueue && remoteQueue.songs.length > 0 && (
