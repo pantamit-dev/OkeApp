@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useState, useRef, useMemo, useEffect } from "react";
-import Navbar from "@/components/Navbar";
+import Link from "next/link";
 import SearchBar from "@/components/SearchBar";
 import YouTubePlayer, { YouTubePlayerHandle } from "@/components/YouTubePlayer";
 import QueueList from "@/components/QueueList";
@@ -27,6 +27,7 @@ export default function HomePage() {
     toggleRepeat,
     clearQueue,
     reorderQueue,
+    updateQueue,
   } = useQueue();
 
   const { toasts, addToast, removeToast } = useToast();
@@ -38,6 +39,7 @@ export default function HomePage() {
     joinRoom,
     syncQueue,
     addSongToRoom,
+    syncPlayState,
     leaveRoom,
   } = useRoom();
 
@@ -87,6 +89,7 @@ export default function HomePage() {
   useKeyboardShortcuts(shortcutHandlers);
 
   // ===== Room Sync (Host → Supabase) =====
+  // ===== Room Sync (Host → Supabase: ส่งข้อมูลคิวขึ้นฐานข้อมูล) =====
   useEffect(() => {
     if (!room.isConnected || !room.isHost) return;
     if (isSyncingRef.current) return;
@@ -103,27 +106,89 @@ export default function HomePage() {
     }
   }, [queue, room.isConnected, room.isHost, syncQueue]);
 
-  // ===== Room Sync (Supabase → Host: รับเพลงจาก Guest) =====
+  // ===== Room Sync (Supabase → Host: รับข้อมูลคิว / จัดลำดับใหม่ / ลบเพลง จาก Remote) =====
   useEffect(() => {
     if (!room.isConnected || !room.isHost || !remoteQueue) return;
 
-    const localIds = new Set(queue.songs.map((s) => s.videoId));
-    const newSongs = remoteQueue.songs.filter((s) => !localIds.has(s.videoId));
+    const remoteQueueStr = JSON.stringify(remoteQueue.songs.map((s) => s.videoId));
+    const localQueueStr = JSON.stringify(queue.songs.map((s) => s.videoId));
 
-    if (newSongs.length > 0) {
+    // ตรวจสอบความแตกต่างของคิวเพลง หรือ index ของเพลงปัจจุบัน
+    if (remoteQueueStr !== localQueueStr || remoteQueue.currentIndex !== queue.currentIndex) {
       isSyncingRef.current = true;
-      newSongs.forEach((song) => addToQueue(song));
-      addToast(
-        `เพื่อนเพิ่ม ${newSongs.length} เพลงเข้าคิว!`,
-        "info"
-      );
-      // Reset sync flag after state update
+
+      // ล็อกค่าซิงค์ปัจจุบันไม่ให้ยิงขึ้น DB อีกครั้ง
+      const nextSyncStr = JSON.stringify({
+        s: remoteQueue.songs.map((s) => s.videoId),
+        i: remoteQueue.currentIndex,
+        r: remoteQueue.isRepeat,
+      });
+      lastSyncRef.current = nextSyncStr;
+
+      // อัปเดตคิวในเครื่อง Host ให้ตรงกับคิวส่วนกลางของ Supabase
+      updateQueue({
+        songs: remoteQueue.songs,
+        currentIndex: remoteQueue.currentIndex,
+        isRepeat: remoteQueue.isRepeat,
+      });
+
+      // แจ้งเตือนเมื่อมีความเปลี่ยนแปลง
+      if (remoteQueue.songs.length > queue.songs.length) {
+        addToast("➕ เพลงถูกเพิ่มเข้าคิวผ่านรีโมตคอนโทรล", "info");
+      } else if (remoteQueue.songs.length < queue.songs.length) {
+        addToast("🗑️ เพลงถูกลบออกจากคิวผ่านรีโมตคอนโทรล", "info");
+      } else {
+        addToast("🔀 จัดลำดับคิวเพลงใหม่ผ่านรีโมตคอนโทรล", "info");
+      }
+
+      // ปลดล็อกการซิงค์
       setTimeout(() => {
         isSyncingRef.current = false;
       }, 500);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [remoteQueue]);
+  }, [remoteQueue, room.isConnected, room.isHost, queue.songs, queue.currentIndex, updateQueue, addToast]);
+
+  // ===== Playback State Sync (Host → Supabase: ส่งสถานะเล่นจริงไปที่ DB) =====
+  useEffect(() => {
+    if (room.isConnected && room.isHost) {
+      syncPlayState(isPlaying);
+    }
+  }, [isPlaying, room.isConnected, room.isHost, syncPlayState]);
+
+  // ===== Playback Commands Sync (Supabase → Host: รับคำสั่งเล่นเพลงจากรีโมต) =====
+  const lastCommandTimestampRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!room.isConnected || !room.isHost || !remoteQueue?.lastCommand) return;
+
+    const { action, timestamp } = remoteQueue.lastCommand;
+
+    // ทำงานเฉพาะเมื่อได้รับคำสั่งใหม่ที่มี timestamp ล่าสุด
+    if (!lastCommandTimestampRef.current || timestamp > lastCommandTimestampRef.current) {
+      lastCommandTimestampRef.current = timestamp;
+
+      switch (action) {
+        case "play":
+          playerRef.current?.play();
+          addToast("▶️ เล่นเพลงผ่านรีโมตคอนโทรล", "info");
+          break;
+        case "pause":
+          playerRef.current?.pause();
+          addToast("⏸️ หยุดเพลงผ่านรีโมตคอนโทรล", "info");
+          break;
+        case "next":
+          playNext();
+          addToast("⏭️ ข้ามเพลงผ่านรีโมตคอนโทรล", "info");
+          break;
+        case "replay":
+          playerRef.current?.seekTo(0);
+          addToast("🔄 เริ่มเล่นเพลงใหม่ผ่านรีโมตคอนโทรล", "info");
+          break;
+        default:
+          break;
+      }
+    }
+  }, [remoteQueue?.lastCommand, room.isConnected, room.isHost, playNext, addToast]);
 
   // ===== Handlers =====
   const handleAddToQueue = useCallback(
@@ -170,51 +235,7 @@ export default function HomePage() {
     addToast("ล้างคิวเพลงทั้งหมดแล้ว", "info");
   }, [clearQueue, addToast]);
 
-  // ===== Fullscreen Mode =====
-  if (isFullscreen) {
-    return (
-      <div className="fixed inset-0 z-[999] bg-black flex flex-col">
-        {/* Player เต็มจอ */}
-        <div className="flex-1 relative">
-          <YouTubePlayer
-            ref={playerRef}
-            currentSong={currentSong}
-            isRepeat={queue.isRepeat}
-            onEnded={handleEnded}
-            onToggleRepeat={toggleRepeat}
-            onPlayStateChange={setIsPlaying}
-          />
-        </div>
 
-        {/* ข้อมูลเพลง + ปุ่มออก */}
-        <div className="flex items-center justify-between px-4 py-3 bg-black/90">
-          <div className="min-w-0 flex-1">
-            {currentSong && (
-              <>
-                <p className="truncate text-sm font-medium text-white/90">
-                  {currentSong.title}
-                </p>
-                <p className="truncate text-xs text-white/40">
-                  {currentSong.channelTitle}
-                </p>
-              </>
-            )}
-          </div>
-          <button
-            onClick={exitFullscreen}
-            className="ml-4 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm text-white/70 transition-all hover:bg-white/20"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9L4 4m0 0v5m0-5h5m6 6l5 5m0 0v-5m0 5h-5" />
-            </svg>
-            ออกเต็มจอ (Esc)
-          </button>
-        </div>
-
-        <ToastContainer toasts={toasts} onRemove={removeToast} />
-      </div>
-    );
-  }
 
   // ===== Normal Layout =====
   return (
@@ -228,21 +249,21 @@ export default function HomePage() {
         }}
       >
         <div className="mx-auto flex max-w-[1800px] items-center justify-between px-4 py-3 lg:px-6 relative">
-          <a href="/" className="flex items-center gap-2 group">
+          <Link href="/" className="flex items-center gap-2 group">
             <span className="text-3xl transition-transform group-hover:scale-110 group-hover:rotate-12">
               🎤
             </span>
             <span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-400 bg-clip-text text-xl font-bold tracking-tight text-transparent lg:text-2xl">
-              InwZa'KaraO'ke
+              InwZa&apos;KaraO&apos;ke
             </span>
-          </a>
+          </Link>
 
           {/* Center Credit (กรอบสีแดง) */}
           <div
             className="hidden md:block absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-xs font-bold tracking-wider uppercase opacity-60"
             style={{ color: "var(--text-secondary)" }}
           >
-            ©️Power By S'Pantamit
+            ©️Power By S&apos;Pantamit
           </div>
 
           <div className="flex items-center gap-2">
@@ -290,7 +311,7 @@ export default function HomePage() {
             <SearchBar onAddToQueue={handleAddToQueue} />
 
             {/* Video Player + ปุ่มขยาย/เต็มจอ */}
-            <div className="relative">
+            <div className={isFullscreen ? "fixed inset-0 z-[999] bg-black flex flex-col" : "relative"}>
               <YouTubePlayer
                 ref={playerRef}
                 currentSong={currentSong}
@@ -298,36 +319,40 @@ export default function HomePage() {
                 onEnded={handleEnded}
                 onToggleRepeat={toggleRepeat}
                 onPlayStateChange={setIsPlaying}
+                isFullscreen={isFullscreen}
+                onExitFullscreen={exitFullscreen}
               />
               {/* ปุ่มขวาบน: ขยาย + เต็มจอ */}
-              <div className="absolute right-3 top-3 z-10 flex gap-2">
-                {/* Fullscreen */}
-                <button
-                  onClick={toggleFullscreen}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/60 text-white/70 backdrop-blur-md border border-white/10 transition-all hover:bg-black/80 hover:text-white hover:scale-105 active:scale-95"
-                  title="เต็มจอ (F)"
-                >
-                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
-                  </svg>
-                </button>
-                {/* ขยาย/ย่อ Queue */}
-                <button
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/60 text-white/70 backdrop-blur-md border border-white/10 transition-all hover:bg-black/80 hover:text-white hover:scale-105 active:scale-95"
-                  title={isExpanded ? "แสดงคิว" : "ซ่อนคิว"}
-                >
-                  {isExpanded ? (
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9L4 4m0 0v5m0-5h5m6 6l5 5m0 0v-5m0 5h-5" />
-                    </svg>
-                  ) : (
+              {!isFullscreen && (
+                <div className="absolute right-3 top-3 z-10 flex gap-2">
+                  {/* Fullscreen */}
+                  <button
+                    onClick={toggleFullscreen}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/60 text-white/70 backdrop-blur-md border border-white/10 transition-all hover:bg-black/80 hover:text-white hover:scale-105 active:scale-95"
+                    title="เต็มจอ (F)"
+                  >
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
                     </svg>
-                  )}
-                </button>
-              </div>
+                  </button>
+                  {/* ขยาย/ย่อ Queue */}
+                  <button
+                    onClick={() => setIsExpanded(!isExpanded)}
+                    className="flex h-9 w-9 items-center justify-center rounded-lg bg-black/60 text-white/70 backdrop-blur-md border border-white/10 transition-all hover:bg-black/80 hover:text-white hover:scale-105 active:scale-95"
+                    title={isExpanded ? "แสดงคิว" : "ซ่อนคิว"}
+                  >
+                    {isExpanded ? (
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9L4 4m0 0v5m0-5h5m6 6l5 5m0 0v-5m0 5h-5" />
+                      </svg>
+                    ) : (
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Now Playing */}
@@ -407,7 +432,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t py-4 text-center" style={{ borderColor: "var(--border)" }}>
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
-          🎤 InwZa'KaraO'ke — ร้องเพลงคาราโอเกะออนไลน์ · Powered by YouTube
+          🎤 InwZa&apos;KaraO&apos;ke — ร้องเพลงคาราโอเกะออนไลน์ · Powered by YouTube
         </p>
       </footer>
 

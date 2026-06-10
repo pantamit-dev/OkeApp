@@ -128,6 +128,10 @@ export function useQueue() {
       ? queue.songs[queue.currentIndex]
       : null;
 
+  const updateQueue = useCallback((newQueue: QueueState) => {
+    setQueue(newQueue);
+  }, []);
+
   return {
     queue,
     currentSong,
@@ -138,5 +142,6 @@ export function useQueue() {
     toggleRepeat,
     clearQueue,
     reorderQueue,
+    updateQueue,
   };
 }

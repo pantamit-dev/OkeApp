@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-namespace */
 // ===== YouTube Data API v3 Types =====
 
 export interface YouTubeSearchResult {

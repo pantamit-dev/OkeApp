@@ -11,8 +11,11 @@ export function useTheme() {
   useEffect(() => {
     const saved = localStorage.getItem("karaoke-theme") as Theme | null;
     if (saved && (saved === "dark" || saved === "light")) {
-      setTheme(saved);
       document.documentElement.setAttribute("data-theme", saved);
+      // หลีกเลี่ยงการทำ setState แบบซิงโครนัสใน Effect เพื่อป้องกันการทำ render ซ้ำซ้อน (cascading renders)
+      setTimeout(() => {
+        setTheme(saved);
+      }, 0);
     }
   }, []);
 

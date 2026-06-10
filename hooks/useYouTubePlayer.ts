@@ -21,38 +21,11 @@ export function useYouTubePlayer(
   const [duration, setDuration] = useState(0);
   const timeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const optionsRef = useRef(options);
-  optionsRef.current = options;
 
-  // โหลด YouTube IFrame API script
+  // อัปเดต options ใน ref เพื่อไม่ให้ callback ด้านล่างจำกัดอยู่กับค่าเก่า
   useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    // ถ้าโหลดแล้ว ไม่ต้องโหลดอีก
-    if (window.YT && window.YT.Player) {
-      initPlayer();
-      return;
-    }
-
-    const existingScript = document.getElementById("youtube-iframe-api");
-    if (!existingScript) {
-      const script = document.createElement("script");
-      script.id = "youtube-iframe-api";
-      script.src = "https://www.youtube.com/iframe_api";
-      script.async = true;
-      document.head.appendChild(script);
-    }
-
-    window.onYouTubeIframeAPIReady = () => {
-      initPlayer();
-    };
-
-    return () => {
-      if (timeIntervalRef.current) {
-        clearInterval(timeIntervalRef.current);
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [containerId]);
+    optionsRef.current = options;
+  }, [options]);
 
   const initPlayer = useCallback(() => {
     if (playerRef.current) {
@@ -121,6 +94,36 @@ export function useYouTubePlayer(
       },
     });
   }, [containerId]);
+
+  // โหลด YouTube IFrame API script
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // ถ้าโหลดแล้ว ไม่ต้องโหลดอีก
+    if (window.YT && window.YT.Player) {
+      initPlayer();
+      return;
+    }
+
+    const existingScript = document.getElementById("youtube-iframe-api");
+    if (!existingScript) {
+      const script = document.createElement("script");
+      script.id = "youtube-iframe-api";
+      script.src = "https://www.youtube.com/iframe_api";
+      script.async = true;
+      document.head.appendChild(script);
+    }
+
+    window.onYouTubeIframeAPIReady = () => {
+      initPlayer();
+    };
+
+    return () => {
+      if (timeIntervalRef.current) {
+        clearInterval(timeIntervalRef.current);
+      }
+    };
+  }, [containerId, initPlayer]);
 
   const loadVideo = useCallback(
     (videoId: string) => {

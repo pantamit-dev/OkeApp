@@ -1,0 +1,24 @@
+# Cursor Rules for OkeApp (Next.js, Supabase, Vercel, GitHub)
+
+## Coding & Architecture
+- Use **TypeScript** with strict typing. Avoid `any`.
+- Keep component sizes small and focused.
+- Use **Vanilla CSS** for core layouts/components as preferred in this project (defined in [globals.css](file:///C:/xampp/htdocs/karaoke/app/globals.css)).
+- For interactive features like the video player, room state, or song queue, use **Client Components** (`"use client"`).
+
+## Next.js (App Router)
+- Group pages in `app/`.
+- Handle backend logic/YouTube API proxy requests inside API Routes (`app/api/`).
+- Follow the rules in [AGENTS.md](file:///C:/xampp/htdocs/karaoke/AGENTS.md) carefully for breaking changes in Next.js versions.
+
+## Supabase
+- Use Supabase Realtime for instant queue and player sync.
+- Keep migration scripts updated in [migration.sql](file:///C:/xampp/htdocs/karaoke/supabase/migration.sql).
+- Secure tables using Row Level Security (RLS).
+
+## Vercel & Deployment
+- Ensure environment variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `YOUTUBE_API_KEY`) are set correctly.
+- Test build locally via `npm run build` before pushing.
+
+## GitHub Workflow
+- Write clean and descriptive commit messages following Conventional Commits (e.g., `feat:`, `fix:`, `docs:`, `style:`).

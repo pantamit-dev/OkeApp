@@ -53,3 +53,9 @@ CREATE TRIGGER rooms_updated_at
 
 -- ลบห้องเก่าที่ไม่ได้ใช้งานเกิน 24 ชั่วโมง (optional)
 -- สามารถตั้ง Cron Job ใน Supabase ทีหลังได้
+
+-- ===================================================
+-- เพิ่มคอลัมน์สำหรับระบบรีโมตคอนโทรล (Realtime Remote Control)
+-- ===================================================
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS last_command JSONB DEFAULT NULL;
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS is_playing BOOLEAN DEFAULT false;

@@ -16,6 +16,8 @@ interface RoomQueue {
   songs: Song[];
   currentIndex: number;
   isRepeat: boolean;
+  isPlaying?: boolean;
+  lastCommand?: { action: string; timestamp: number } | null;
 }
 
 export function useRoom() {
@@ -38,24 +40,66 @@ export function useRoom() {
     return code;
   };
 
+  // Subscribe to Realtime changes
+  const subscribeToRoom = useCallback((code: string) => {
+    // ยกเลิก subscription เดิม
+    if (channelRef.current) {
+      supabase.removeChannel(channelRef.current);
+    }
+
+    const channel = supabase
+      .channel(`room-${code}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "rooms",
+          filter: `code=eq.${code}`,
+        },
+        (payload) => {
+          const data = payload.new;
+          setRemoteQueue({
+            songs: (data.queue as Song[]) || [],
+            currentIndex: data.current_index ?? -1,
+            isRepeat: data.is_repeat ?? false,
+            isPlaying: data.is_playing ?? false,
+            lastCommand: data.last_command || null,
+          });
+        }
+      )
+      .subscribe();
+
+    channelRef.current = channel;
+  }, []);
+
   // สร้างห้องใหม่
   const createRoom = useCallback(async () => {
     try {
-      const code = generateCode();
+      let code = "";
+      let success = false;
+      let retries = 0;
 
-      const { error } = await supabase.from("rooms").insert({
-        code,
-        queue: [],
-        current_index: -1,
-        is_repeat: false,
-      });
+      while (!success && retries < 5) {
+        code = generateCode();
+        const { error } = await supabase.from("rooms").insert({
+          code,
+          queue: [],
+          current_index: -1,
+          is_repeat: false,
+        });
 
-      if (error) {
-        // ถ้า code ซ้ำ ลองใหม่
-        if (error.code === "23505") {
-          return createRoom();
+        if (!error) {
+          success = true;
+        } else if (error.code === "23505") {
+          retries++;
+        } else {
+          throw error;
         }
-        throw error;
+      }
+
+      if (!success) {
+        throw new Error("ไม่สามารถสุ่มรหัสห้องที่ไม่ซ้ำกันได้");
       }
 
       setRoom({
@@ -74,7 +118,7 @@ export function useRoom() {
       setRoom((prev) => ({ ...prev, error: message }));
       return null;
     }
-  }, []);
+  }, [subscribeToRoom]);
 
   // เข้าร่วมห้อง
   const joinRoom = useCallback(async (code: string) => {
@@ -107,6 +151,8 @@ export function useRoom() {
         songs: (data.queue as Song[]) || [],
         currentIndex: data.current_index ?? -1,
         isRepeat: data.is_repeat ?? false,
+        isPlaying: data.is_playing ?? false,
+        lastCommand: data.last_command || null,
       });
 
       // Subscribe to realtime
@@ -118,38 +164,7 @@ export function useRoom() {
       setRoom((prev) => ({ ...prev, error: message }));
       return false;
     }
-  }, []);
-
-  // Subscribe to Realtime changes
-  const subscribeToRoom = (code: string) => {
-    // ยกเลิก subscription เดิม
-    if (channelRef.current) {
-      supabase.removeChannel(channelRef.current);
-    }
-
-    const channel = supabase
-      .channel(`room-${code}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "rooms",
-          filter: `code=eq.${code}`,
-        },
-        (payload) => {
-          const data = payload.new;
-          setRemoteQueue({
-            songs: (data.queue as Song[]) || [],
-            currentIndex: data.current_index ?? -1,
-            isRepeat: data.is_repeat ?? false,
-          });
-        }
-      )
-      .subscribe();
-
-    channelRef.current = channel;
-  };
+  }, [subscribeToRoom]);
 
   // Sync คิวไปที่ Supabase (เฉพาะ Host หรือเมื่อเพิ่มเพลง)
   const syncQueue = useCallback(
@@ -202,6 +217,89 @@ export function useRoom() {
     [room.code]
   );
 
+  // ลบเพลงออกจากคิว (สำหรับ Remote control)
+  const removeSongFromRoom = useCallback(
+    async (index: number) => {
+      if (!room.code) return false;
+
+      const { data } = await supabase
+        .from("rooms")
+        .select("queue, current_index")
+        .eq("code", room.code)
+        .single();
+
+      if (!data) return false;
+
+      const currentQueue = (data.queue as Song[]) || [];
+      const newQueue = currentQueue.filter((_, i) => i !== index);
+      let newIndex = data.current_index ?? -1;
+
+      if (newQueue.length === 0) {
+        newIndex = -1;
+      } else if (newIndex >= newQueue.length) {
+        newIndex = newQueue.length - 1;
+      } else if (index < newIndex) {
+        newIndex = newIndex - 1;
+      }
+
+      const { error } = await supabase
+        .from("rooms")
+        .update({ queue: newQueue, current_index: newIndex })
+        .eq("code", room.code);
+
+      return !error;
+    },
+    [room.code]
+  );
+
+  // สลับลำดับเพลง (สำหรับ Remote control)
+  const reorderSongsInRoom = useCallback(
+    async (newSongs: Song[]) => {
+      if (!room.code) return false;
+
+      const { error } = await supabase
+        .from("rooms")
+        .update({ queue: newSongs })
+        .eq("code", room.code);
+
+      return !error;
+    },
+    [room.code]
+  );
+
+  // ส่งคำสั่งการเล่นเพลง (สำหรับ Remote control เช่น play, pause, next, replay)
+  const sendPlaybackCommand = useCallback(
+    async (action: "play" | "pause" | "next" | "replay") => {
+      if (!room.code) return false;
+
+      const { error } = await supabase
+        .from("rooms")
+        .update({
+          last_command: {
+            action,
+            timestamp: Date.now(),
+          },
+        })
+        .eq("code", room.code);
+
+      return !error;
+    },
+    [room.code]
+  );
+
+  // ซิงค์สถานะการเล่นจริงกลับไปที่ DB (สำหรับ Host)
+  const syncPlayState = useCallback(
+    async (isPlaying: boolean) => {
+      if (!room.code) return;
+
+      await supabase
+        .from("rooms")
+        .update({ is_playing: isPlaying })
+        .eq("code", room.code);
+    },
+    [room.code]
+  );
+
   // ออกจากห้อง
   const leaveRoom = useCallback(() => {
     if (channelRef.current) {
@@ -233,6 +331,10 @@ export function useRoom() {
     joinRoom,
     syncQueue,
     addSongToRoom,
+    removeSongFromRoom,
+    reorderSongsInRoom,
+    sendPlaybackCommand,
+    syncPlayState,
     leaveRoom,
   };
 }

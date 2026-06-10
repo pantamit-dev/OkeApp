@@ -11,17 +11,32 @@ interface YouTubePlayerProps {
   onEnded: () => void;
   onToggleRepeat: () => void;
   onPlayStateChange?: (isPlaying: boolean) => void;
+  isFullscreen?: boolean;
+  onExitFullscreen?: () => void;
 }
 
-// ให้ page.tsx เรียก method เหล่านี้ผ่าน ref (สำหรับ keyboard shortcuts)
+// ให้ page.tsx เรียก method เหล่านี้ผ่าน ref (สำหรับ keyboard shortcuts และ remote commands)
 export interface YouTubePlayerHandle {
   togglePlay: () => void;
   toggleMute: () => void;
   seekTo: (seconds: number) => void;
+  play: () => void;
+  pause: () => void;
 }
 
 const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
-  ({ currentSong, isRepeat, onEnded, onToggleRepeat, onPlayStateChange }, ref) => {
+  (
+    {
+      currentSong,
+      isRepeat,
+      onEnded,
+      onToggleRepeat,
+      onPlayStateChange,
+      isFullscreen = false,
+      onExitFullscreen,
+    },
+    ref
+  ) => {
     const {
       isReady,
       isPlaying,
@@ -30,6 +45,8 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
       currentTime,
       duration,
       loadVideo,
+      play,
+      pause,
       togglePlay,
       toggleMute,
       setVolume,
@@ -45,6 +62,8 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
       togglePlay,
       toggleMute,
       seekTo,
+      play,
+      pause,
     }));
 
     const prevVideoIdRef = useRef<string | null>(null);
@@ -58,9 +77,13 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
     }, [currentSong, isReady, loadVideo]);
 
     return (
-      <div className="flex flex-col gap-0">
+      <div className={isFullscreen ? "flex flex-col h-full w-full bg-black" : "flex flex-col gap-0"}>
         {/* Video Container */}
-        <div className="relative aspect-video w-full overflow-hidden rounded-t-2xl bg-zinc-900 border border-white/10 border-b-0">
+        <div className={
+          isFullscreen 
+            ? "flex-1 w-full relative overflow-hidden bg-black" 
+            : "relative aspect-video w-full overflow-hidden rounded-t-2xl bg-zinc-900 border border-white/10 border-b-0"
+        }>
           {/* YouTube Player */}
           <div id="youtube-player" className="absolute inset-0" />
 
@@ -98,6 +121,35 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
           onNext={onEnded}
           onRestart={() => seekTo(0)}
         />
+
+        {/* Fullscreen Bottom Info Bar */}
+        {isFullscreen && (
+          <div className="flex items-center justify-between px-4 py-3 bg-black/95 border-t border-white/10">
+            <div className="min-w-0 flex-1">
+              {currentSong && (
+                <>
+                  <p className="truncate text-sm font-medium text-white/90">
+                    {currentSong.title}
+                  </p>
+                  <p className="truncate text-xs text-white/40">
+                    {currentSong.channelTitle}
+                  </p>
+                </>
+              )}
+            </div>
+            {onExitFullscreen && (
+              <button
+                onClick={onExitFullscreen}
+                className="ml-4 flex items-center gap-2 rounded-xl bg-white/10 px-4 py-2 text-sm text-white/70 transition-all hover:bg-white/20"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 9L4 4m0 0v5m0-5h5m6 6l5 5m0 0v-5m0 5h-5" />
+                </svg>
+                ออกเต็มจอ (Esc)
+              </button>
+            )}
+          </div>
+        )}
       </div>
     );
   }
