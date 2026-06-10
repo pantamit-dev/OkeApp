@@ -267,19 +267,29 @@ export function useRoom() {
     [room.code]
   );
 
-  // ส่งคำสั่งการเล่นเพลง (สำหรับ Remote control เช่น play, pause, next, replay)
+  // ส่งคำสั่งการเล่นเพลง (สำหรับ Remote control เช่น PLAY, PAUSE, NEXT, REPLAY)
   const sendPlaybackCommand = useCallback(
-    async (action: "play" | "pause" | "next" | "replay") => {
+    async (action: "PLAY" | "PAUSE" | "NEXT" | "REPLAY" | "play" | "pause" | "next" | "replay") => {
       if (!room.code) return false;
+
+      const upperAction = action.toUpperCase() as "PLAY" | "PAUSE" | "NEXT" | "REPLAY";
+      const updates: any = {
+        last_command: {
+          action: upperAction,
+          timestamp: Date.now(),
+        },
+      };
+
+      // อัปเดตสถานะ is_playing ควบคู่ไปด้วย
+      if (upperAction === "PLAY") {
+        updates.is_playing = true;
+      } else if (upperAction === "PAUSE") {
+        updates.is_playing = false;
+      }
 
       const { error } = await supabase
         .from("rooms")
-        .update({
-          last_command: {
-            action,
-            timestamp: Date.now(),
-          },
-        })
+        .update(updates)
         .eq("code", room.code);
 
       return !error;

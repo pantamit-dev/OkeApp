@@ -100,7 +100,7 @@ export default function RoomGuestPage() {
             <div className="flex items-center justify-center gap-4">
               {/* Replay / Restart */}
               <button
-                onClick={() => sendPlaybackCommand("replay").then(() => addToast("เริ่มเล่นใหม่", "info"))}
+                onClick={() => sendPlaybackCommand("REPLAY").then(() => addToast("เริ่มเล่นใหม่", "info"))}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 active:scale-95 transition-all"
                 title="เริ่มเล่นใหม่"
               >
@@ -112,9 +112,9 @@ export default function RoomGuestPage() {
               {/* Play / Pause Toggle */}
               <button
                 onClick={() => {
-                  const nextAction = remoteQueue.isPlaying ? "pause" : "play";
+                  const nextAction = remoteQueue.isPlaying ? "PAUSE" : "PLAY";
                   sendPlaybackCommand(nextAction).then(() => {
-                    addToast(nextAction === "play" ? "เล่นเพลง" : "หยุดเพลง", "info");
+                    addToast(nextAction === "PLAY" ? "เล่นเพลง" : "หยุดเพลง", "info");
                   });
                 }}
                 className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-r from-fuchsia-500 to-purple-600 text-white shadow-lg hover:brightness-110 active:scale-95 transition-all"
@@ -133,7 +133,7 @@ export default function RoomGuestPage() {
 
               {/* Next (Skip) */}
               <button
-                onClick={() => sendPlaybackCommand("next").then(() => addToast("ข้ามเพลง", "info"))}
+                onClick={() => sendPlaybackCommand("NEXT").then(() => addToast("ข้ามเพลง", "info"))}
                 className="flex h-11 w-11 items-center justify-center rounded-full bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 active:scale-95 transition-all"
                 title="ข้ามเพลงถัดไป"
               >

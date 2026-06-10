@@ -167,21 +167,24 @@ export default function HomePage() {
     if (!lastCommandTimestampRef.current || timestamp > lastCommandTimestampRef.current) {
       lastCommandTimestampRef.current = timestamp;
 
-      switch (action) {
-        case "play":
-          playerRef.current?.play();
+      const upperAction = action.toUpperCase();
+
+      switch (upperAction) {
+        case "PLAY":
+          playerRef.current?.playVideo();
           addToast("▶️ เล่นเพลงผ่านรีโมตคอนโทรล", "info");
           break;
-        case "pause":
-          playerRef.current?.pause();
+        case "PAUSE":
+          playerRef.current?.pauseVideo();
           addToast("⏸️ หยุดเพลงผ่านรีโมตคอนโทรล", "info");
           break;
-        case "next":
+        case "NEXT":
           playNext();
           addToast("⏭️ ข้ามเพลงผ่านรีโมตคอนโทรล", "info");
           break;
-        case "replay":
+        case "REPLAY":
           playerRef.current?.seekTo(0);
+          playerRef.current?.playVideo();
           addToast("🔄 เริ่มเล่นเพลงใหม่ผ่านรีโมตคอนโทรล", "info");
           break;
         default:

@@ -22,6 +22,8 @@ export interface YouTubePlayerHandle {
   seekTo: (seconds: number) => void;
   play: () => void;
   pause: () => void;
+  playVideo: () => void;
+  pauseVideo: () => void;
 }
 
 const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
@@ -64,6 +66,8 @@ const YouTubePlayer = forwardRef<YouTubePlayerHandle, YouTubePlayerProps>(
       seekTo,
       play,
       pause,
+      playVideo: play,
+      pauseVideo: pause,
     }));
 
     const prevVideoIdRef = useRef<string | null>(null);
